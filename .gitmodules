@@ -1,0 +1,4 @@
+[submodule "edgetx"]
+	path = edgetx
+	url = https://github.com/EdgeTX/edgetx.git
+	branch = 2.12
