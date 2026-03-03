@@ -1,0 +1,14 @@
+# Build artifacts
+build_firmware_*/
+build_simulator_*/
+build_companion/
+dist/
+logs/
+
+# System files
+.DS_Store
+
+# Python
+.python-version
+__pycache__/
+*.pyc
