@@ -73,7 +73,7 @@ build_firmware() {
     done
     NAME=$(echo "${NAME}" | tr '[:upper:]' '[:lower:]')
 
-    local BUILD_DIR="${SCRIPT_DIR}/build_firmware_${NAME}"
+    local BUILD_DIR="${SCRIPT_DIR}/build/firmware_${NAME}"
 
     echo ""
     echo "========================================="
@@ -81,7 +81,7 @@ build_firmware() {
     echo "========================================="
 
     rm -rf "${BUILD_DIR}"
-    mkdir "${BUILD_DIR}"
+    mkdir -p "${BUILD_DIR}"
     cd "${BUILD_DIR}" || exit 1
 
     local OUT="${OUTPUT_DIR}/${NAME}"
@@ -129,8 +129,12 @@ build_simulator_plugin() {
     done
     NAME=$(echo "${NAME}" | tr '[:upper:]' '[:lower:]')
 
-    local BUILD_DIR="${SCRIPT_DIR}/build_simulator_${NAME}"
+    local BUILD_DIR="${SCRIPT_DIR}/build/simulator_${NAME}"
     
+    rm -rf "${BUILD_DIR}"
+    mkdir -p "${BUILD_DIR}"
+    cd "${BUILD_DIR}" || exit 1
+
     local LOG_FILE="${LOG_DIR}/simulator_${NAME}.log"
     echo "  → Configuring and building simulator plugin... (Log: logs/simulator_${NAME}.log)"
 
@@ -144,12 +148,16 @@ build_simulator_plugin() {
 # Companion app (native / macOS)
 
 build_companion() {
-    local BUILD_DIR="${SCRIPT_DIR}/build_companion"
+    local BUILD_DIR="${SCRIPT_DIR}/build/companion"
 
     echo ""
     echo "========================================="
     echo "  Companion (macOS)"
     echo "========================================="
+
+    rm -rf "${BUILD_DIR}"
+    mkdir -p "${BUILD_DIR}"
+    cd "${BUILD_DIR}" || exit 1
 
     local LOG_FILE="${LOG_DIR}/companion.log"
     echo "  → Configuring and building companion... (Log: logs/companion.log)"
