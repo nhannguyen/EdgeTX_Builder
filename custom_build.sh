@@ -186,13 +186,13 @@ build_companion() {
 if [ "$BUILD_FIRMWARE" = true ]; then
     build_firmware TX15     "${GPS_FLAGS[@]}" "${MODULE_FLAGS[@]}"
     build_firmware TX16SMK3 "${GPS_FLAGS[@]}" "${MODULE_FLAGS[@]}"
-    build_firmware X7       "${MODULE_FLAGS[@]}" -DPCBREV=GX12
+    build_firmware X7       "${MODULE_FLAGS[@]}" -DPCBREV=GX12 -DINTERNAL_MODULE_MULTI=NO
 fi
 
 if [ "$BUILD_SIMULATOR" = true ]; then
     build_simulator_plugin TX15
     build_simulator_plugin TX16SMK3
-    build_simulator_plugin X7 -DPCBREV=GX12
+    build_simulator_plugin X7 -DPCBREV=GX12 -DINTERNAL_MODULE_MULTI=NO
 fi
 
 if [ "$BUILD_COMPANION" = true ]; then
