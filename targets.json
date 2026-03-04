@@ -1,0 +1,318 @@
+{
+    "firmware_version": "2.12",
+    "targets": {
+        "el18": {
+            "pcb": "PL18",
+            "pcbrev": "EL18",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "nb4p": {
+            "pcb": "PL18",
+            "pcbrev": "NB4P",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "nv14": {
+            "pcb": "PL18",
+            "pcbrev": "NV14",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "pa01": {
+            "pcb": "PA01",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "pl18": {
+            "pcb": "PL18",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "pl18ev": {
+            "pcb": "PL18",
+            "pcbrev": "PL18EV",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "pl18u": {
+            "pcb": "PL18",
+            "pcbrev": "PL18U",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "st16": {
+            "pcb": "ST16",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "bumblebee": {
+            "pcb": "X7",
+            "pcbrev": "BUMBLEBEE",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tlite": {
+            "pcb": "X7",
+            "pcbrev": "TLITE",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tlitef4": {
+            "pcb": "X7",
+            "pcbrev": "TLITEF4",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tpro": {
+            "pcb": "X7",
+            "pcbrev": "TPRO",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tprov2": {
+            "pcb": "X7",
+            "pcbrev": "TPROV2",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tpros": {
+            "pcb": "X7",
+            "pcbrev": "TPROS",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "t14": {
+            "pcb": "X7",
+            "pcbrev": "T14",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "t15": {
+            "pcb": "X10",
+            "pcbrev": "T15",
+            "enabled": false,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "t15pro": {
+            "pcb": "T15PRO",
+            "enabled": false,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "t16": {
+            "pcb": "X10",
+            "pcbrev": "T16",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "t18": {
+            "pcb": "X10",
+            "pcbrev": "T18",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "t20": {
+            "pcb": "X7",
+            "pcbrev": "T20",
+            "enabled": false,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "t20v2": {
+            "pcb": "X7",
+            "pcbrev": "T20V2",
+            "enabled": false,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "boxer": {
+            "pcb": "X7",
+            "pcbrev": "BOXER",
+            "enabled": false,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "gx12": {
+            "pcb": "X7",
+            "pcbrev": "GX12",
+            "enabled": true,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO",
+                "-DINTERNAL_MODULE_MULTI=NO"
+            ]
+        },
+        "mt12": {
+            "pcb": "X7",
+            "pcbrev": "MT12",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "pocket": {
+            "pcb": "X7",
+            "pcbrev": "POCKET",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tx12mk2": {
+            "pcb": "X7",
+            "pcbrev": "TX12MK2",
+            "enabled": false,
+            "extra_flags": [
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tx15": {
+            "pcb": "TX15",
+            "enabled": true,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tx16s": {
+            "pcb": "X10",
+            "pcbrev": "TX16S",
+            "enabled": false,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "tx16smk3": {
+            "pcb": "TX16SMK3",
+            "enabled": true,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        },
+        "zorro": {
+            "pcb": "X7",
+            "pcbrev": "ZORRO",
+            "enabled": false,
+            "extra_flags": [
+                "-DINTERNAL_GPS=YES",
+                "-DINTERNAL_GPS_BAUDRATE=115200",
+                "-DCROSSFIRE=YES",
+                "-DGHOST=NO",
+                "-DAFHDS3=NO"
+            ]
+        }
+    }
+}
