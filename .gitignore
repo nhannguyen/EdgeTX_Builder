@@ -1,12 +1,11 @@
-# Build artifacts
-build/
-dist/
-logs/
+build
+dist
+logs
 
-# System files
 .DS_Store
 
-# Python
 .python-version
-__pycache__/
+__pycache__
 *.pyc
+
+.vscode
