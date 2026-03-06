@@ -19,7 +19,7 @@ COMMON_FLAGS = [
     "-DGVARS=YES",
     "-DHELI=NO",
     "-DCMAKE_BUILD_TYPE=Release",
-    "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15",
+    "-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0",
 ]
 
 # --- Helper Functions ---
