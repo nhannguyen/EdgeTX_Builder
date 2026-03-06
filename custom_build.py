@@ -173,12 +173,6 @@ def build_simulator_plugin(target_info):
 
     print(f"  → Building simulator plugin: {name} (Log: logs/simulator_{name}.log)")
 
-    # Force multi-module off for GX12 in simulator if not explicitly set
-    if (
-        name == "gx12" or "GX12" in str(extra_flags)
-    ) and "-DINTERNAL_MODULE_MULTI=NO" not in extra_flags:
-        extra_flags.append("-DINTERNAL_MODULE_MULTI=NO")
-
     run_cmd(
         ["cmake", f"-DPCB={pcb}"] + extra_flags + COMMON_FLAGS + [str(SOURCE_DIR)],
         log_file,
