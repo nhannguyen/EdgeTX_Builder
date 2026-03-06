@@ -190,12 +190,16 @@ def build_simulator_plugin(target_info):
     )
 
 
-def build_companion():
+def build_companion(target_info):
     """Build EdgeTX Companion for macOS."""
+    pcb = target_info["pcb"]
+    extra_flags = target_info.get("extra_flags", [])
+    name = get_target_name(pcb, extra_flags)
+
     build_dir = SCRIPT_DIR / "build/companion"
     log_file = LOG_DIR / "companion.log"
 
-    print(f"\n{'='*40}\n  Companion (macOS)\n{'='*40}")
+    print(f"\n{'='*40}\n  Companion (macOS) - Target: {name}\n{'='*40}")
 
     if build_dir.exists():
         shutil.rmtree(build_dir)
@@ -205,7 +209,8 @@ def build_companion():
 
     print(f"  → Configuring and building companion... (Log: logs/companion.log)")
     run_cmd(
-        ["cmake", "-DPCB=TX16SMK3", f"-DCMAKE_PREFIX_PATH={qt_prefix}"]
+        ["cmake", f"-DPCB={pcb}", f"-DCMAKE_PREFIX_PATH={qt_prefix}"]
+        + extra_flags
         + COMMON_FLAGS
         + [str(SOURCE_DIR)],
         log_file,
@@ -259,6 +264,7 @@ def main():
     full_config = load_model_configs()
     MODEL_CONFIGS = full_config.get("targets", {})
     fw_version = full_config.get("firmware_version", "unknown")
+    companion_target_name = full_config.get("companion_target", "tx16smk3")
 
     print(f"\n{'='*41}\n  EdgeTX Custom Build | Version: {fw_version}\n{'='*41}\n")
 
@@ -308,7 +314,20 @@ def main():
                 build_simulator_plugin(info)
 
         if args.component in ["all", "companion"]:
-            build_companion()
+            # Determine which target to use for Companion
+            c_target = args.target.lower()
+            if c_target == "all":
+                c_target = companion_target_name
+
+            cfg = MODEL_CONFIGS.get(c_target, {})
+            info = {
+                "pcb": cfg.get("pcb", c_target.upper()),
+                "extra_flags": cfg.get("extra_flags", []).copy(),
+            }
+            if "pcbrev" in cfg:
+                info["extra_flags"].append(f"-DPCBREV={cfg['pcbrev']}")
+
+            build_companion(info)
 
     except subprocess.CalledProcessError as e:
         print(
