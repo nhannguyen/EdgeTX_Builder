@@ -190,132 +190,6 @@ def build_simulator_plugin(target_info):
     )
 
 
-def build_companion(target_info, bundled_targets, model_configs, c_target):
-    """Build EdgeTX Companion for macOS."""
-    pcb = target_info["pcb"]
-    extra_flags = target_info.get("extra_flags", [])
-    name = get_target_name(pcb, extra_flags)
-
-    build_dir = SCRIPT_DIR / "build/companion"
-    log_file = LOG_DIR / "companion.log"
-
-    print(f"\n{'='*40}\n  Companion (macOS) - Target: {name}\n{'='*40}")
-
-    if build_dir.exists():
-        shutil.rmtree(build_dir)
-    build_dir.mkdir(parents=True, exist_ok=True)
-
-    qt_prefix = "/opt/homebrew/Cellar/qtwebengine/6.10.2/lib"
-
-    print(f"  → Configuring and building companion... (Log: logs/companion.log)")
-    run_cmd(
-        ["cmake", f"-DPCB={pcb}", f"-DCMAKE_PREFIX_PATH={qt_prefix}"]
-        + extra_flags
-        + COMMON_FLAGS
-        + [str(SOURCE_DIR)],
-        log_file,
-        cwd=build_dir,
-    )
-    run_cmd(
-        ["cmake", "--build", ".", "--target", "native-configure", "--parallel", JOBS],
-        log_file,
-        cwd=build_dir,
-    )
-    run_cmd(
-        ["cmake", "--build", "native", "--target", "companion", "--parallel", JOBS],
-        log_file,
-        cwd=build_dir,
-    )
-
-    # Bundle simulator plugins before packaging
-    plugins_dir = build_dir / "native/plugins"
-    plugins_dir.mkdir(parents=True, exist_ok=True)
-
-    print("  → Bundling simulator plugins...")
-    for t in bundled_targets:
-        if t == c_target:
-            # Companion already builds and bundles its own target's simulator plugin during packaging
-            continue
-
-        cfg = model_configs.get(t, {})
-        t_pcb = cfg.get("pcb", t.upper())
-        t_flags = cfg.get("extra_flags", []).copy()
-        if "pcbrev" in cfg:
-            t_flags.append(f"-DPCBREV={cfg['pcbrev']}")
-        t_name = get_target_name(t_pcb, t_flags)
-
-        sim_build_dir = SCRIPT_DIR / f"build/simulator_{t_name}"
-        built_plugins = list((sim_build_dir / "native" / "plugins").glob("*.*"))
-        for plugin in built_plugins:
-            shutil.copy2(plugin, plugins_dir)
-            print(f"    Bundled: {plugin.name}")
-
-    print(
-        "  → Fixing macOS Framework RPATHs in Homebrew Qt system plugins before packaging..."
-    )
-    try:
-        brew_prefix = subprocess.run(
-            ["brew", "--prefix"], capture_output=True, text=True, check=True
-        ).stdout.strip()
-
-        qpdf_sys = Path(f"{brew_prefix}/share/qt/plugins/imageformats/libqpdf.dylib")
-        if not qpdf_sys.exists():
-            qpdf_sys = Path(
-                f"{brew_prefix}/Cellar/qtwebengine/6.10.2/share/qt/plugins/imageformats/libqpdf.dylib"
-            )
-
-        qvk_sys_1 = Path(
-            f"{brew_prefix}/share/qt/plugins/platforminputcontexts/libqtvirtualkeyboardplugin.dylib"
-        )
-        qvk_sys_2 = Path(
-            f"{brew_prefix}/Cellar/qtvirtualkeyboard/6.10.2/share/qt/plugins/platforminputcontexts/libqtvirtualkeyboardplugin.dylib"
-        )
-        qvk_sys = qvk_sys_1 if qvk_sys_1.exists() else qvk_sys_2
-
-        if qpdf_sys.exists():
-            run_cmd(
-                [
-                    "install_name_tool",
-                    "-change",
-                    "@rpath/QtPdf.framework/Versions/A/QtPdf",
-                    f"{brew_prefix}/lib/QtPdf.framework/Versions/A/QtPdf",
-                    str(qpdf_sys),
-                ],
-                log_file,
-            )
-            run_cmd(["codesign", "--force", "-s", "-", str(qpdf_sys)], log_file)
-
-        if qvk_sys.exists():
-            run_cmd(
-                [
-                    "install_name_tool",
-                    "-change",
-                    "@rpath/QtVirtualKeyboardQml.framework/Versions/A/QtVirtualKeyboardQml",
-                    f"{brew_prefix}/lib/QtVirtualKeyboardQml.framework/Versions/A/QtVirtualKeyboardQml",
-                    "-change",
-                    "@rpath/QtVirtualKeyboard.framework/Versions/A/QtVirtualKeyboard",
-                    f"{brew_prefix}/lib/QtVirtualKeyboard.framework/Versions/A/QtVirtualKeyboard",
-                    str(qvk_sys),
-                ],
-                log_file,
-            )
-            run_cmd(["codesign", "--force", "-s", "-", str(qvk_sys)], log_file)
-    except Exception as e:
-        print(f"  Warning: Could not run homebrew rpath fixes: {e}")
-
-    run_cmd(
-        ["cmake", "--build", "native", "--target", "package"], log_file, cwd=build_dir
-    )
-
-    # Collect .dmg
-    dmgs = list((build_dir / "native").glob("*.dmg"))
-    if dmgs:
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        for dmg in dmgs:
-            shutil.copy2(dmg, OUTPUT_DIR)
-            print(f"  Output: {OUTPUT_DIR}/{dmg.name}")
-
-
 # --- Main Logic ---
 
 
@@ -329,7 +203,7 @@ def main():
     parser.add_argument(
         "component",
         nargs="?",
-        choices=["all", "firmware", "simulator", "companion"],
+        choices=["all", "firmware", "simulator"],
         default="all",
     )
     parser.add_argument(
@@ -362,71 +236,27 @@ def main():
             t_lower = t.lower()
             if t_lower not in targets_to_build:
                 targets_to_build.append(t_lower)
-            if t_lower not in MODEL_CONFIGS:
-                # Fallback for unknown targets
-                MODEL_CONFIGS[t_lower] = {"pcb": t.upper(), "extra_flags": []}
 
-    if not targets_to_build and args.component != "companion":
+    if not targets_to_build:
         print("Error: No valid targets specified or enabled.")
         sys.exit(1)
 
     # 5. Execution
     try:
-        if args.component in ["all", "firmware"]:
-            for t in targets_to_build:
-                cfg = MODEL_CONFIGS.get(t, {})
-                info = {
-                    "pcb": cfg.get("pcb", t.upper()),
-                    "extra_flags": cfg.get("extra_flags", []).copy(),
-                }
-                if "pcbrev" in cfg:
-                    info["extra_flags"].append(f"-DPCBREV={cfg['pcbrev']}")
+        for t in targets_to_build:
+            cfg = MODEL_CONFIGS.get(t, {})
+            info = {
+                "pcb": cfg.get("pcb", t.upper()),
+                "extra_flags": cfg.get("extra_flags", []).copy(),
+            }
+            if "pcbrev" in cfg:
+                info["extra_flags"].append(f"-DPCBREV={cfg['pcbrev']}")
+
+            if args.component in ["all", "firmware"]:
                 build_firmware(info)
 
-        if args.component in ["all", "simulator"]:
-            for t in targets_to_build:
-                cfg = MODEL_CONFIGS.get(t, {})
-                info = {
-                    "pcb": cfg.get("pcb", t.upper()),
-                    "extra_flags": cfg.get("extra_flags", []).copy(),
-                }
-                if "pcbrev" in cfg:
-                    info["extra_flags"].append(f"-DPCBREV={cfg['pcbrev']}")
+            if args.component in ["all", "simulator"]:
                 build_simulator_plugin(info)
-
-        if args.component in ["all", "companion"]:
-            # Determine which target to use for Companion itself (use the first user input target)
-            c_target = targets_to_build[0]
-
-            # Companion needs to bundle simulators. So we must build them first if not already done
-            if args.component == "companion":
-                for t in targets_to_build:
-                    if t == c_target:
-                        # Skip building the standalone simulator for the main companion target,
-                        # as companion's native-configure will build its own libsimulator anyway.
-                        continue
-
-                    cfg_t = MODEL_CONFIGS.get(t, {})
-                    info_t = {
-                        "pcb": cfg_t.get("pcb", t.upper()),
-                        "extra_flags": cfg_t.get("extra_flags", []).copy(),
-                    }
-                    if "pcbrev" in cfg_t:
-                        info_t["extra_flags"].append(f"-DPCBREV={cfg_t['pcbrev']}")
-                    build_simulator_plugin(info_t)
-
-            # Determine which target to use for Companion itself (use the first user input target)
-            c_target = targets_to_build[0]
-
-            cfg_c = MODEL_CONFIGS.get(c_target, {})
-            info_c = {
-                "pcb": cfg_c.get("pcb", c_target.upper()),
-                "extra_flags": cfg_c.get("extra_flags", []).copy(),
-            }
-            if "pcbrev" in cfg_c:
-                info_c["extra_flags"].append(f"-DPCBREV={cfg_c['pcbrev']}")
-
-            build_companion(info_c, targets_to_build, MODEL_CONFIGS, c_target)
 
     except subprocess.CalledProcessError as e:
         print(
