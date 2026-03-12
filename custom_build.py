@@ -111,7 +111,7 @@ def build_firmware(target_info):
     out_dir = OUTPUT_DIR / name
     log_file = LOG_DIR / f"{name}.log"
 
-    print(f"\n{'='*40}\n  Firmware: {name}\n{'='*40}")
+    print(f"\n{'=' * 40}\n  Firmware: {name}\n{'=' * 40}")
 
     for d in [build_dir, out_dir]:
         if d.exists():
@@ -219,7 +219,7 @@ def main():
     MODEL_CONFIGS = full_config.get("targets", {})
     fw_version = full_config.get("firmware_version", "unknown")
 
-    print(f"\n{'='*41}\n  EdgeTX Custom Build | Version: {fw_version}\n{'='*41}\n")
+    print(f"\n{'=' * 41}\n  EdgeTX Custom Build | Version: {fw_version}\n{'=' * 41}\n")
 
     # 3. Repository Sync
     if fw_version != "unknown":
