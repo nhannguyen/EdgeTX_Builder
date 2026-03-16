@@ -11,15 +11,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SOURCE_DIR = SCRIPT_DIR / "edgetx"
 OUTPUT_DIR = SCRIPT_DIR / "dist"
 LOG_DIR = SCRIPT_DIR / "logs"
-ARM_TOOLCHAIN_DIR = "/Applications/ArmGNUToolchain/14.2.rel1/arm-none-eabi/bin"
-JOBS = str(os.cpu_count() or 1)
-
 COMMON_FLAGS = [
     "-DLUA=YES",
     "-DGVARS=YES",
     "-DHELI=NO",
     "-DCMAKE_BUILD_TYPE=Release",
-    "-DCMAKE_OSX_DEPLOYMENT_TARGET=26.0",
 ]
 
 # --- Helper Functions ---
@@ -42,6 +38,7 @@ def load_model_configs():
 def run_cmd(cmd, log_file, cwd=None):
     """Execute a command and log its output."""
     with open(log_file, "a") as f:
+        f.write(f"\n--- Running: {' '.join(cmd)} ---\n")
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=cwd, check=True)
 
 
@@ -113,16 +110,17 @@ def build_firmware(target_info):
 
     print(f"\n{'=' * 40}\n  Firmware: {name}\n{'=' * 40}")
 
+    if target_info.get("clean", False) and build_dir.exists():
+        shutil.rmtree(build_dir)
+
     for d in [build_dir, out_dir]:
-        if d.exists():
-            shutil.rmtree(d)
         d.mkdir(parents=True, exist_ok=True)
 
     print(f"  → Configuring and building... (Log: logs/{name}.log)")
 
     # 1. Configure
     run_cmd(
-        ["cmake", f"-DPCB={pcb}", f"-DARM_TOOLCHAIN_DIR={ARM_TOOLCHAIN_DIR}"]
+        ["cmake", f"-DPCB={pcb}", f"-DARM_TOOLCHAIN_DIR={target_info['toolchain']}"]
         + extra_flags
         + COMMON_FLAGS
         + [str(SOURCE_DIR)],
@@ -138,14 +136,22 @@ def build_firmware(target_info):
             "--target",
             "arm-none-eabi-configure",
             "--parallel",
-            JOBS,
+            target_info["jobs"],
         ],
         log_file,
         cwd=build_dir,
     )
     # 3. Build Firmware
     run_cmd(
-        ["cmake", "--build", ".", "--target", "firmware", "--parallel", JOBS],
+        [
+            "cmake",
+            "--build",
+            ".",
+            "--target",
+            "firmware",
+            "--parallel",
+            target_info["jobs"],
+        ],
         log_file,
         cwd=build_dir,
     )
@@ -167,7 +173,7 @@ def build_simulator_plugin(target_info):
     build_dir = SCRIPT_DIR / f"build/simulator_{name}"
     log_file = LOG_DIR / f"simulator_{name}.log"
 
-    if build_dir.exists():
+    if target_info.get("clean", False) and build_dir.exists():
         shutil.rmtree(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -179,12 +185,28 @@ def build_simulator_plugin(target_info):
         cwd=build_dir,
     )
     run_cmd(
-        ["cmake", "--build", ".", "--target", "native-configure", "--parallel", JOBS],
+        [
+            "cmake",
+            "--build",
+            ".",
+            "--target",
+            "native-configure",
+            "--parallel",
+            target_info["jobs"],
+        ],
         log_file,
         cwd=build_dir,
     )
     run_cmd(
-        ["cmake", "--build", "native", "--target", "libsimulator", "--parallel", JOBS],
+        [
+            "cmake",
+            "--build",
+            "native",
+            "--target",
+            "libsimulator",
+            "--parallel",
+            target_info["jobs"],
+        ],
         log_file,
         cwd=build_dir,
     )
@@ -211,6 +233,25 @@ def main():
         nargs="*",
         default=["all"],
         help="Target models (e.g., tx15, gx12, all)",
+    )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Perform a clean build by deleting build dirs",
+    )
+    parser.add_argument(
+        "--toolchain",
+        default=os.getenv(
+            "ARM_TOOLCHAIN_DIR",
+            "/Applications/ArmGNUToolchain/14.2.rel1/arm-none-eabi/bin",
+        ),
+        help="Path to ARM toolchain bin directory",
+    )
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        default=str(os.cpu_count() or 1),
+        help="Number of parallel build jobs",
     )
     args = parser.parse_args()
 
@@ -245,12 +286,19 @@ def main():
     try:
         for t in targets_to_build:
             cfg = MODEL_CONFIGS.get(t, {})
+            # Determine name: preference to pcbrev, then pcb, then target key
+            pcb = cfg.get("pcb", t.upper())
+            pcbrev = cfg.get("pcbrev")
+
             info = {
-                "pcb": cfg.get("pcb", t.upper()),
+                "pcb": pcb,
                 "extra_flags": cfg.get("extra_flags", []).copy(),
+                "clean": args.clean,
+                "toolchain": args.toolchain,
+                "jobs": args.jobs,
             }
-            if "pcbrev" in cfg:
-                info["extra_flags"].append(f"-DPCBREV={cfg['pcbrev']}")
+            if pcbrev:
+                info["extra_flags"].append(f"-DPCBREV={pcbrev}")
 
             if args.component in ["all", "firmware"]:
                 build_firmware(info)

@@ -126,25 +126,33 @@ Run the script passing the `component` and `targets` arguments inside your virtu
 
 ```bash
 # General syntax
-python custom_build.py [component] [target1] [target2]...
+python custom_build.py [component] [target1] [target2]... [options]
 ```
 
 **Components Options:** `all`, `firmware`, `simulator` (default: `all`)
 
 **Target Options:** Any radio short-name defined in `targets.json` (e.g., `tx16smk3`, `tx15`, `gx12`), or `all` to build everything defined as `"enabled": true`.
 
+**Additional Options:**
+- `--clean`: Perform a clean build by deleting the target's build directory before starting. (Default: False - incremental build).
+- `--toolchain <path>`: Specify a custom path to the ARM toolchain `bin` directory. Can also be set via the `ARM_TOOLCHAIN_DIR` environment variable.
+- `-j <N>`, `--jobs <N>`: Number of parallel build jobs (Default: auto-detected CPU count).
+
 #### Examples:
 ```bash
 # Build firmware and simulator for the targets enabled in targets.json
 python custom_build.py all all
 
-# Build ONLY firmware for tx16smk3 and tx15
+# Build ONLY firmware for tx16smk3 and tx15 (Incremental)
 python custom_build.py firmware tx16smk3 tx15
 
-# Build ONLY simulator for gx12
-python custom_build.py simulator gx12
+# Perform a CLEAN build for tx15
+python custom_build.py firmware tx15 --clean
+
+# Build with a specific number of parallel cores
+python custom_build.py all gx12 -j 4
 ```
 
 ### Build Outputs & Logs
 - **Build Output:** Completed targets (e.g., `firmware.bin` or `firmware.uf2`) are copied to `dist/<target_name>/`.
-- **Logs:** Verbose build scripts logs for troubleshooting are located in the `logs/` directory. If compiling fails, check there for underlying compiler output.
+- **Logs:** Detailed build logs for troubleshooting are located in the `logs/` directory (e.g., `logs/tx16smk3.log`). These logs now include the exact commands being executed, making it easier to track progress or identify failures.
