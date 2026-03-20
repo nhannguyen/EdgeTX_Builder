@@ -1,75 +1,468 @@
 # EdgeTX Firmware Web Builder
 
-A web interface for managing EdgeTX firmware builds. Replaces the command-line
-`custom_build.py` workflow with a browser-based UI.
+A modern web interface for building and managing EdgeTX firmware. This application replaces the command-line `custom_build.py` workflow with a browser-based UI, making firmware builds accessible to users without CLI expertise.
+
+## Overview
+
+The EdgeTX Firmware Web Builder allows you to:
+
+- **View and manage radio model configurations** — browse all 40+ supported models, enable/disable builds, and edit per-model settings
+- **Trigger firmware builds** — select one or multiple models, configure build options (clean build, parallel jobs, firmware version), and monitor progress in real-time
+- **Stream build logs** — watch the entire build process as it happens via Server-Sent Events (SSE)
+- **Download firmware artifacts** — get compiled `.bin` and `.uf2` files directly from your builds
+- **Track build history** — inspect past builds with timestamps, status, logs, and configuration details
+- **Manage settings** — configure your ARM toolchain path, set default build options, and import/export configurations
+
+The web app runs locally on your machine (no cloud, no authentication, no external dependencies) and integrates seamlessly with your existing EdgeTX build setup.
 
 ## Prerequisites
 
-- Python 3.10 or later
-- ARM GCC toolchain (`arm-none-eabi-gcc`) installed locally
-- CMake installed and available in PATH
-- EdgeTX source cloned to `edgetx/` directory (project root)
+To use the EdgeTX Firmware Web Builder, you need:
 
-## Installation
+- **Python 3.8 or later** — the web app and `custom_build.py` both require Python 3.8+
+- **ARM GCC toolchain 14.2.rel1** — install from [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm). The path to the `bin/` directory (containing `arm-none-eabi-gcc`) must be configured in Settings
+- **CMake 3.15+** — required for the EdgeTX build system; install via package manager or [cmake.org](https://cmake.org)
+- **Git** — EdgeTX source is cloned into the `edgetx/` directory (should already be set up by `custom_build.py`)
 
-Install Python dependencies from the webapp directory:
+## Quick Start
+
+### Option 1: Using the startup script (recommended)
 
 ```bash
-pip install -r webapp/requirements.txt
+chmod +x start_webapp.sh
+./start_webapp.sh
 ```
 
-## Running
+Then open http://localhost:8000 in your browser.
 
-From the project root:
+The script handles Python version checks, virtual environment setup, dependency installation, and application startup.
+
+**To pass additional options:**
+
+```bash
+./start_webapp.sh --port 8080
+./start_webapp.sh --debug
+./start_webapp.sh --host 0.0.0.0 --port 9000  # WARNING: non-localhost exposes the app to your network
+```
+
+### Option 2: Manual setup
+
+If you prefer to set up the environment yourself (using the project's pyenv environment):
+
+```bash
+# Install dependencies into the active pyenv environment
+pip install -r webapp/requirements.txt
+
+# Start the app
+python webapp/main.py
+```
+
+### Option 3: Direct invocation (if dependencies are globally installed)
 
 ```bash
 python webapp/main.py
 ```
 
-Then open http://localhost:8000 in your browser.
+Once running, open your browser to **http://localhost:8000**.
 
-### Options
+## Application Structure
 
-```
-python webapp/main.py --help
+### The Four Pages
 
-  --host HOST    Bind host (default: 127.0.0.1)
-  --port PORT    Bind port (default: 8000)
-  --debug        Enable debug/reload mode
-```
+#### 1. Models Page
 
-## Features
+View and manage all available radio models. The Models page displays all 40+ supported radio models in a table with columns for:
 
-- **Models page** — View, add, edit, and delete radio model configurations
-- **Build page** — Select models, configure build options, and watch real-time log output
-- **History page** — Browse past builds with timestamps, status, and full log access
-- **Settings page** — Configure ARM toolchain path and build defaults
+- **Model** — The unique identifier (e.g., `tx15`, `gx12`, `pl18`)
+- **PCB** — The circuit board type (e.g., `TX15`, `PL18`, `EL18`)
+- **PCB Rev** — The board revision, if specified
+- **Enabled** — Toggle switch to include/exclude the model from builds
+- **Flags** — Count of extra CMake build flags
+
+**Features:**
+
+- **Search/filter** — Type a model name to filter the list
+- **Toggle enabled status** — Click the toggle switch to enable/disable a model for future builds
+- **View details** — Click on a model row to open the detail editor
+- **Add a model** — Click "Add Model" button to create a new custom model configuration
+- **Edit model** — Open the detail view to modify PCB type, revision, and extra flags
+- **Delete model** — Remove unwanted models with confirmation
+
+#### 2. Build Page
+
+Select models and trigger firmware builds with live progress monitoring.
+
+**Build Workflow:**
+
+1. **Select models** — Check the boxes for models you want to build (only enabled models appear)
+2. **Configure options:**
+   - **Firmware version** — Select the branch/tag to build (default from configuration)
+   - **Clean build** — Checkbox to remove previous build artifacts before starting
+   - **Parallel jobs** — Number of parallel compilation threads (default: CPU core count)
+3. **Start build** — Click "Build" to begin
+4. **Watch progress** — Real-time logs stream in the log viewer; a progress indicator shows build status
+5. **Download artifacts** — Once complete, download `.bin` or `.uf2` files for each model
+
+**Real-Time Features:**
+
+- Log lines appear as they are generated by CMake and the compiler
+- Auto-scroll follows new output
+- Copy button to copy all logs to clipboard
+- Jump-to-bottom button for long builds
+
+#### 3. History Page
+
+Browse all past builds with detailed logs and metadata.
+
+**Features:**
+
+- **Paginated list** — All past builds sorted newest-first
+- **Status filters** — Show only Success, Failed, or all builds
+- **Model filter** — Find builds for a specific model
+- **View details** — Click on a build to see:
+  - Build options used (firmware version, clean/jobs settings)
+  - Full build logs
+  - Start and end times
+  - Build duration
+- **Download logs** — Export raw log files for analysis
+- **Delete entries** — Remove old build records (with confirmation)
+
+#### 4. Settings Page
+
+Configure toolchain, build defaults, and import/export configurations.
+
+**Sections:**
+
+- **ARM Toolchain Path** — Path to the `bin/` directory of your ARM GCC installation. Click "Verify" to test the configuration. The app looks for `arm-none-eabi-gcc` in this directory
+- **Build Defaults** — Set default firmware version and other global options
+- **Configuration Management:**
+  - **Export** — Download current model configuration as `targets.json` for backup or sharing
+  - **Import** — Load a previously saved configuration from a JSON file (replaces current models)
+- **History Retention** — Number of days to keep build history (0 = infinite, default)
+
+## How-to Guides
+
+### Adding a New Radio Model
+
+1. Go to the **Models** page
+2. Click the **"Add Model"** button (top right)
+3. Fill in the form:
+   - **Model** — Enter a unique name (e.g., `my_radio`, no spaces)
+   - **PCB** — Enter the circuit board type (e.g., `CUSTOM_PCB`)
+   - **PCB Revision** (optional) — Leave blank or enter a revision code
+   - **Enabled** — Check to enable this model for builds
+   - **Extra Flags** — Add CMake build flags (see table below for examples)
+4. Click **"Add"** to save
+
+The new model will appear in the list immediately and be available for selection on the Build page.
+
+### Editing a Radio Model
+
+1. Go to the **Models** page
+2. Click on the model you want to edit
+3. Edit any of these fields:
+   - PCB type
+   - PCB revision
+   - Enabled status
+   - Extra flags
+4. Click **"Save"** to confirm
+
+Changes are applied immediately; you do not need to refresh the page.
+
+### Removing a Radio Model
+
+1. Go to the **Models** page
+2. Click on the model you want to delete
+3. Click the **"Delete"** button
+4. Confirm the deletion in the dialog
+
+The model will be removed from the configuration.
+
+### Triggering a Firmware Build
+
+1. Go to the **Build** page
+2. **Select one or more models** — Check the boxes for models you want to build
+3. **(Optional) Configure build options:**
+   - Change **Firmware version** if you want to build a different branch/tag
+   - Check **"Clean Build"** to remove old artifacts
+   - Adjust **"Parallel Jobs"** for compilation speed (higher = faster, uses more CPU)
+4. Click the **"Build"** button
+
+The page will switch to a live progress view. As the build runs, you will see:
+
+- The target model names with status icons (pending, building, success, or failed)
+- Live log output updating in real-time
+- A progress indicator
+
+Once the build completes, you will see download buttons for each firmware file.
+
+### Reading Build Logs
+
+**During a build:**
+- Logs appear in real-time in the log viewer on the Build page
+- Scroll up to see earlier output
+- Click "Jump to Bottom" to follow new lines
+- Click "Copy Logs" to copy all text to clipboard
+
+**After a build (from History):**
+1. Go to the **History** page
+2. Click on the build you want to inspect
+3. View the full logs in the detail modal
+4. Click "Download Logs" to save the log file
+
+### Downloading Firmware Artifacts
+
+**Immediately after a build:**
+1. Stay on the Build page after the build completes
+2. Look for download buttons labeled with the model name (e.g., "Download tx15_firmware.bin")
+3. Click to download
+
+**From History:**
+1. Go to the **History** page
+2. Click on the build to view details
+3. Look for artifact links in the detail modal
+
+Artifacts are stored in the `dist/` directory on your system (usually in the EdgeTX_Builder folder).
+
+### Configuring the ARM Toolchain Path
+
+1. Go to the **Settings** page
+2. Find the "ARM Toolchain Path" section
+3. Enter the path to the `bin/` directory of your ARM GCC installation
+   - Example macOS: `/Applications/ARM/bin`
+   - Example Linux: `/opt/arm-gcc-14.2.rel1/bin`
+4. Click **"Verify"** to test the path
+5. You will see a green checkmark if valid, or an error message if not
+
+The app uses this path to locate `arm-none-eabi-gcc` and other toolchain binaries during builds.
+
+### Importing/Exporting Configurations
+
+**Export the current configuration:**
+1. Go to the **Settings** page
+2. Click **"Export Configuration"**
+3. A `targets.json` file downloads to your computer
+4. Save it to back up or share your setup
+
+**Import a saved configuration:**
+1. Go to the **Settings** page
+2. Click **"Import Configuration"**
+3. Select a `targets.json` file from your computer
+4. Click "Import" (this will replace all current models)
+5. Your models are now updated from the imported file
+
+## Configuration Reference
+
+### Model Fields
+
+When adding or editing a radio model, you configure these fields:
+
+| Field | Required | Example | Description |
+|-------|----------|---------|-------------|
+| **Model** | Yes | `tx15` | Unique identifier for this radio. Must be alphanumeric (no spaces). Used as the key in the configuration file. |
+| **PCB** | Yes | `TX15` | Circuit board type. This is passed to CMake as the `RADIO_PCB` variable. Examples: `TX15`, `GX12`, `PL18`, `EL18`. |
+| **PCB Revision** | No | `EL18` | Optional board revision. Examples: `EL18`, `PL18EV`. If specified, passed to CMake as `RADIO_PCB_REV`. |
+| **Enabled** | Yes | `true/false` | Whether this model is included in builds. Only enabled models appear in the Build page model list. |
+| **Extra Flags** | No | `-DCROSSFIRE=YES` | Array of CMake build flags. Each flag must start with `-D` and contain a `=` sign. Examples: `-DGPS=YES`, `-DMODULE_MULTI=YES`, `-DAFHDS3=NO`. |
+
+### Extra Flags Examples
+
+Common CMake build flags (check the EdgeTX documentation or `custom_build.py` for the complete list):
+
+| Flag | Example Value | Purpose |
+|------|----------------|---------|
+| `CROSSFIRE` | `YES` / `NO` | Enable Crossfire RC protocol support |
+| `GHOST` | `YES` / `NO` | Enable Ghost RC protocol support |
+| `AFHDS3` | `YES` / `NO` | Enable AFHDS3 RC protocol support |
+| `GPS` | `YES` / `NO` | Enable GPS receiver support |
+| `HELI` | `YES` / `NO` | Enable helicopter mode |
+| `MULTI` | `YES` / `NO` | Enable MultiModule protocol support |
+| `TELEMETRY` | `YES` / `NO` | Enable telemetry support |
+
+Add flags as separate items in the **Extra Flags** section. The app validates that each flag matches the CMake format (`-D<NAME>=<VALUE>`).
+
+### Application Settings
+
+Settings stored in `app_settings.json` (auto-created on first run):
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `toolchainPath` | string | (none) | Path to the ARM GCC `bin/` directory. Must be set before builds work. |
+| `buildOutputDirectory` | string | `./dist` | Where compiled firmware files are saved. |
+| `logsDirectory` | string | `./logs` | Where build logs are stored. |
+| `autoCleanOldBuilds` | boolean | `false` | Automatically delete old artifacts after a new build (not recommended). |
+| `buildHistoryRetention` | number | `0` (infinite) | Days to retain build history. Set to `30` to auto-clean builds older than 30 days. |
+
+## Troubleshooting
+
+### "ARM toolchain not found"
+
+**Symptom:** Error message when you open Settings or try to build.
+
+**Cause:** The app could not locate `arm-none-eabi-gcc` in the configured path.
+
+**Solution:**
+1. Open the **Settings** page
+2. Verify the **ARM Toolchain Path** is correct
+   - On macOS: typically `/Applications/ARM/bin` or `/usr/local/bin`
+   - On Linux: typically `/opt/arm-gcc-14.2.rel1/bin` or in your home directory
+3. Click **"Verify"** to test the path
+4. If it fails, double-check the ARM GCC installation on your system
+
+### "CMake is not installed"
+
+**Symptom:** Build fails with "CMake not found" error.
+
+**Cause:** CMake is not installed or not in your system PATH.
+
+**Solution:**
+1. Install CMake:
+   - **macOS:** `brew install cmake`
+   - **Linux:** `sudo apt-get install cmake` (Debian/Ubuntu) or equivalent for your distro
+2. Verify: `cmake --version` in your terminal
+3. Retry the build
+
+### Build fails with error during compilation
+
+**Symptom:** Build page shows "Failed" status with error logs.
+
+**Cause:** Most often a toolchain issue, missing dependencies, or EdgeTX source problems.
+
+**Solution:**
+1. Check the logs in the log viewer — look for error messages from CMake or the compiler
+2. Common causes:
+   - **Toolchain path wrong** — Verify in Settings
+   - **EdgeTX source not cloned** — The `edgetx/` directory must exist in the project root
+   - **Git submodules not initialized** — Run `git submodule update --init --recursive` in the project root
+   - **Missing build dependencies** — Refer to the EdgeTX README
+3. Try a **Clean Build** to remove stale artifacts
+4. Check the build history for similar failures and their logs
+
+### Port 8000 already in use
+
+**Symptom:** Error like "Address already in use" when starting the app.
+
+**Cause:** Another process is using port 8000.
+
+**Solution:**
+1. **Option A:** Stop the other process and restart the app
+2. **Option B:** Start on a different port:
+   ```bash
+   ./start_webapp.sh --port 8080
+   ```
+   Then visit http://localhost:8080
+
+### Page refresh goes back to Models page
+
+**Symptom:** If I refresh my browser mid-build, I lose the build page.
+
+**Cause:** This is a known limitation — the web app uses JavaScript-based navigation without URL hashing.
+
+**Workaround:** Do not refresh during a build. The build continues on the server even if the page resets; check the History page for the build status.
+
+### "Configuration file is invalid or corrupted"
+
+**Symptom:** Error when loading the app.
+
+**Cause:** The `targets.json` file is malformed JSON or missing required fields.
+
+**Solution:**
+1. Check if `targets.json` exists in the project root
+2. Validate the JSON syntax (use an online JSON validator)
+3. Ensure it has the structure:
+   ```json
+   {
+     "firmware_version": "2.12",
+     "targets": { ... }
+   }
+   ```
+4. If corrupted, delete it and re-run the original `custom_build.py` setup, or import a backup
+
+## Security Notes
+
+The EdgeTX Firmware Web Builder is designed for **local use only** on a trusted machine. The web server has no authentication and should never be exposed to the network. If you start the app with `--host 0.0.0.0` or any address other than `127.0.0.1`, you are exposing:
+
+- Your radio model configurations
+- Build execution capability (anyone can trigger builds)
+- Firmware artifacts and build logs
+- Your ARM toolchain path
+
+The app includes path traversal protection and CMake flag validation, but it is **not suitable for untrusted networks**. Always use `--host 127.0.0.1` (the default).
 
 ## File Structure
 
 ```
 webapp/
-├── main.py                  Entry point: python webapp/main.py
-├── requirements.txt         Python dependencies
+├── main.py                           # FastAPI entry point
+├── requirements.txt                  # Python dependencies
+├── start_webapp.sh                   # Startup script (in project root)
 ├── backend/
-│   ├── models.py            Pydantic schemas and domain exceptions
-│   ├── dependencies.py      FastAPI dependency injection
-│   ├── routes/              API route handlers (one file per resource)
-│   └── services/            Business logic services
-├── data/                    Runtime state (auto-created, gitignored)
+│   ├── models.py                     # Pydantic request/response schemas
+│   ├── dependencies.py               # FastAPI dependency injection
+│   ├── routes/                       # API route handlers
+│   │   ├── models.py                 # /api/models endpoints
+│   │   ├── builds.py                 # /api/builds endpoints
+│   │   ├── config.py                 # /api/config endpoints
+│   │   ├── artifacts.py              # /api/artifacts endpoints
+│   │   ├── history.py                # /api/history endpoints
+│   │   ├── settings.py               # /api/settings endpoints
+│   │   └── health.py                 # /api/health endpoint
+│   └── services/                     # Business logic
+│       ├── config_service.py         # targets.json management
+│       ├── build_executor.py         # Subprocess wrapper
+│       ├── build_service.py          # Build orchestration
+│       ├── artifact_service.py       # Firmware file discovery
+│       ├── history_service.py        # Build history persistence
+│       ├── settings_service.py       # App settings persistence
+│       └── health_service.py         # System health checks
+├── data/                             # Runtime state (auto-created, gitignored)
 │   ├── app_settings.json
 │   ├── build_history.json
 │   └── build_logs/
 └── frontend/
-    ├── index.html           SPA shell
-    ├── css/app.css          Dark-mode stylesheet
+    ├── index.html                    # SPA shell
+    ├── css/
+    │   └── app.css                   # Dark-mode stylesheet
     └── js/
-        ├── app.js           Router and global state
-        ├── api.js           All fetch() calls to the backend
-        ├── pages/           Page components
-        └── components/      Shared UI components
+        ├── app.js                    # Router and global state
+        ├── api.js                    # Fetch API client
+        ├── pages/                    # Page components
+        │   ├── models.js
+        │   ├── build.js
+        │   ├── history.js
+        │   └── settings.js
+        └── components/               # Reusable UI components
+            ├── toast.js
+            ├── confirm.js
+            └── log-viewer.js
 ```
 
 ## API Documentation
 
-Interactive API docs are available at http://localhost:8000/api/docs when the server is running.
+The web app exposes a REST API documented in Swagger/OpenAPI format. While using the web interface is recommended for most tasks, developers can integrate with the API directly.
+
+**Interactive API docs:** http://localhost:8000/api/docs (when the server is running)
+
+**Common endpoints:**
+
+- `GET /api/models` — List all models
+- `POST /api/models` — Create a model
+- `GET /api/models/:key` — Get model details
+- `PATCH /api/models/:key` — Update model
+- `DELETE /api/models/:key` — Delete model
+- `POST /api/builds` — Trigger a build
+- `GET /api/builds/:id` — Get build status
+- `GET /api/builds/:id/logs` — Stream logs via Server-Sent Events
+- `GET /api/history` — Get build history
+- `GET /api/settings` — Get app settings
+- `PATCH /api/settings` — Update settings
+
+Full API documentation is available in the OpenAPI/Swagger UI when the server is running.
+
+## Feedback & Support
+
+For issues, feature requests, or documentation updates, refer to the project's issue tracker and contribution guidelines.
+
+## License
+
+See the EdgeTX project license for details.

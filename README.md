@@ -50,39 +50,17 @@ Navigate to this project directory (`EdgeTX_Builder`):
 cd EdgeTX_Builder
 ```
 
-You can use standard Python `venv`, the fast `uv` tool, or manage it via `pyenv`.
+This project uses `pyenv` and `pyenv-virtualenv` to manage the Python environment.
 
-**Option A: Standard Python venv**
-```bash
-python3 -m venv .venv
-```
-
-**Option B: Using `pyenv` and `pyenv-virtualenv` (Recommended)**
 ```bash
 pyenv virtualenv 3.11.x edgetx
 pyenv local edgetx
-# This creates a .python-version file, automatically activating the environment
+# The .python-version file automatically activates the environment when you enter the directory
 ```
 
-**Option C: Using `uv` (Fastest)**
-```bash
-# brew install uv
-uv venv
-```
-
-### 2. Activate the Virtual Environment
-If you used standard `venv` or `uv`, you must run this command *every time* you open a new terminal session to build:
-```bash
-source .venv/bin/activate
-```
-*(If you are using `pyenv`, the `.python-version` file will automatically activate the environment when you enter the directory).*
-
-### 3. Install Required Python Packages
-With the virtual environment activated (`(.venv)` should appear in your prompt), install the project dependencies listed in `requirements.txt`:
+### 2. Install Required Python Packages
 ```bash
 pip install -r requirements.txt
-# OR if using uv:
-# uv pip install -r requirements.txt
 ```
 
 ## Using the Custom Builder (`custom_build.py`)

@@ -17,10 +17,9 @@ echo ""
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WEBAPP_DIR="$SCRIPT_DIR/webapp"
-VENV_DIR="$WEBAPP_DIR/.venv"
 
 # 1. Check Python version
-echo -e "${YELLOW}[1/4]${NC} Checking Python version..."
+echo -e "${YELLOW}[1/3]${NC} Checking Python version..."
 PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
 PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
 PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
@@ -29,30 +28,17 @@ if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" 
     echo -e "${RED}Error: Python 3.8+ required, found $PYTHON_VERSION${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓${NC} Python $PYTHON_VERSION"
+echo -e "${GREEN}✓${NC} Python $PYTHON_VERSION ($(pyenv version-name 2>/dev/null || echo system))"
 echo ""
 
-# 2. Create or activate virtualenv
-echo -e "${YELLOW}[2/4]${NC} Setting up virtualenv at $VENV_DIR..."
-if [ ! -d "$VENV_DIR" ]; then
-    python3 -m venv "$VENV_DIR"
-    echo -e "${GREEN}✓${NC} Created virtualenv"
-else
-    echo -e "${GREEN}✓${NC} Virtualenv already exists"
-fi
-echo ""
-
-# Activate virtualenv
-source "$VENV_DIR/bin/activate"
-
-# 3. Install requirements
-echo -e "${YELLOW}[3/4]${NC} Installing requirements..."
+# 2. Install requirements into active pyenv environment
+echo -e "${YELLOW}[2/3]${NC} Installing requirements..."
 pip install -q -r "$WEBAPP_DIR/requirements.txt"
 echo -e "${GREEN}✓${NC} Requirements installed"
 echo ""
 
-# 4. Start the application
-echo -e "${YELLOW}[4/4]${NC} Starting the application..."
+# 3. Start the application
+echo -e "${YELLOW}[3/3]${NC} Starting the application..."
 echo -e "${GREEN}✓${NC} Application starting"
 echo ""
 echo -e "${GREEN}================================${NC}"

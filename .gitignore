@@ -11,9 +11,8 @@ __pycache__
 .vscode
 .agents
 
-# Web app runtime state and virtualenv
+# Web app runtime state
 webapp/data/
-webapp/.venv/
 webapp/__pycache__/
 webapp/**/__pycache__/
 webapp/.pytest_cache/
