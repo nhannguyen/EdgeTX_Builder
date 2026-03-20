@@ -45,7 +45,9 @@ def find_default_toolchain() -> str:
     """Attempt to find a default toolchain path based on the OS and environment."""
     env_path = os.getenv("ARM_TOOLCHAIN_DIR")
     if env_path:
-        return env_path
+        if Path(env_path).exists():
+            return env_path
+        logger.warning(f"ARM_TOOLCHAIN_DIR is set but path does not exist: {env_path}")
     
     for path in DEFAULT_TOOLCHAIN_PATHS:
         if Path(path).exists():
@@ -204,11 +206,15 @@ def build_firmware(target_info: Dict[str, Any]):
     )
 
     # Copy output
+    found = False
     for ext in ["uf2", "bin"]:
         src = build_dir / f"arm-none-eabi/firmware.{ext}"
         if src.exists():
             shutil.copy2(src, out_dir / f"firmware.{ext}")
             logger.info(f"Output: {out_dir}/firmware.{ext}")
+            found = True
+    if not found:
+        logger.warning(f"No firmware output files (.uf2 or .bin) found in {build_dir / 'arm-none-eabi'}")
 
 def build_simulator_plugin(target_info: Dict[str, Any]):
     """Build simulator plugin for a specific target."""
@@ -288,10 +294,20 @@ def main():
         default=find_default_toolchain(),
         help="Path to ARM toolchain bin directory",
     )
+    def positive_int(value):
+        try:
+            n = int(value)
+            if n < 1:
+                raise ValueError
+            return str(n)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"--jobs must be a positive integer, got: {value!r}")
+
     parser.add_argument(
         "-j",
         "--jobs",
-        default=str(os.cpu_count() or 1),
+        default=str(os.cpu_count() or 4),
+        type=positive_int,
         help="Number of parallel build jobs",
     )
     parser.add_argument(
@@ -306,6 +322,11 @@ def main():
 
     if not args.toolchain:
         logger.error("ARM toolchain path not found. Please specify via --toolchain or ARM_TOOLCHAIN_DIR env var.")
+        sys.exit(1)
+
+    toolchain_gcc = Path(args.toolchain) / "arm-none-eabi-gcc"
+    if not toolchain_gcc.exists():
+        logger.error(f"arm-none-eabi-gcc not found in toolchain path: {args.toolchain}")
         sys.exit(1)
 
     # 2. Load Configuration
@@ -339,35 +360,34 @@ def main():
         sys.exit(1)
 
     # 5. Execution
-    try:
-        for t in targets_to_build:
-            cfg = MODEL_CONFIGS.get(t, {})
-            # Determine name: preference to pcbrev, then pcb, then target key
-            pcb = cfg.get("pcb", t.upper())
-            pcbrev = cfg.get("pcbrev")
+    for t in targets_to_build:
+        cfg = MODEL_CONFIGS.get(t, {})
+        pcb = cfg.get("pcb", t.upper())
+        pcbrev = cfg.get("pcbrev")
 
-            info = {
-                "pcb": pcb,
-                "extra_flags": cfg.get("extra_flags", []).copy(),
-                "clean": args.clean,
-                "toolchain": args.toolchain,
-                "jobs": args.jobs,
-            }
-            if pcbrev:
-                info["extra_flags"].append(f"-DPCBREV={pcbrev}")
+        info = {
+            "pcb": pcb,
+            "extra_flags": cfg.get("extra_flags", []).copy(),
+            "clean": args.clean,
+            "toolchain": args.toolchain,
+            "jobs": args.jobs,
+        }
+        if pcbrev:
+            info["extra_flags"].append(f"-DPCBREV={pcbrev}")
 
+        try:
             if args.component in ["all", "firmware"]:
                 build_firmware(info)
 
             if args.component in ["all", "simulator"]:
                 build_simulator_plugin(info)
 
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Build failed (exit code {e.returncode}). Check logs/ for details.")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
-        sys.exit(1)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Build failed for target '{t}' (exit code {e.returncode}). Check logs/{t}.log for details.")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Unexpected error building target '{t}': {e}")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
